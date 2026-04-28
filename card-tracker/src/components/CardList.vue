@@ -179,10 +179,18 @@ onMounted(() => {
             <h3 class="font-bold text-slate-100 group-hover:text-blue-400 leading-tight transition-colors">{{ card.name }}</h3>
             <p class="text-[10px] font-mono text-slate-500 mt-1 uppercase tracking-tighter">{{ card.code }} • {{ card.rarity }}</p>
           </div>
-          <span :class="card.isLentOut ? 'text-orange-500 bg-orange-500/10 border-orange-500/20' : 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20'"
-            class="text-[9px] font-black px-2 py-1 rounded border italic uppercase shrink-0">
-            {{ card.isLentOut ? 'Lent' : 'Ready' }}
-          </span>
+          <div class="flex items-center gap-2 shrink-0">
+            <span :class="card.isLentOut ? 'text-orange-500 bg-orange-500/10 border-orange-500/20' : 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20'"
+              class="text-[9px] font-black px-2 py-1 rounded border italic uppercase">
+              {{ card.isLentOut ? 'Mượn' : 'Sẵn' }}
+            </span>
+            <div v-if="isAdmin" class="hidden md:block text-[9px] font-bold text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">
+              ✎
+            </div>
+            <button v-if="isAdmin" @click.stop="openEditModal(card)" class="md:hidden text-lg text-blue-400 hover:text-blue-300 active:scale-90 transition-all p-1">
+              ✎
+            </button>
+          </div>
         </div>
         
         <div class="pt-4 border-t border-slate-800/50">
@@ -190,9 +198,6 @@ onMounted(() => {
             <p class="text-xs text-slate-400">
               Số lượng: <span class="text-slate-200 font-bold font-mono">{{ card.quantity }}</span>
             </p>
-            <div v-if="isAdmin" class="text-[9px] font-bold text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">
-              CHỈNH SỬA ✎
-            </div>
           </div>
           <p v-if="card.note" class="text-[11px] italic text-slate-500 truncate">
             👤 {{ card.note }}
@@ -328,7 +333,6 @@ onMounted(() => {
 </template>
 
 <style scoped>
-@reference "../style.css";
 
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {

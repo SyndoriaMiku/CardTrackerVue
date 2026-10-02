@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import api from '../api'
+import { isAdmin } from '../auth'
 
 const props = defineProps({ type: String })
 
@@ -8,7 +9,6 @@ const cards = ref([])
 const loading = ref(false)
 const searchQuery = ref('')
 const page = ref(1)
-const isAdmin = ref(false)
 
 const isModalOpen = ref(false)
 const editingCard = ref(null)
@@ -28,25 +28,6 @@ const createEmptyCard = () => ({
 const newCard = ref(createEmptyCard())
 
 let debounceTimeout = null
-
-const checkAdminStatus = () => {
-  const token = localStorage.getItem('access')
-  if (!token) return
-  
-  try {
-    const base64Url = token.split('.')[1]
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
-    const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-    }).join(''));
-
-    const payload = JSON.parse(jsonPayload)
-    isAdmin.value = payload.is_staff === true || payload.is_admin === true || payload.role === 'Admin'
-  } catch (e) {
-    console.error("Không thể decode token:", e)
-    isAdmin.value = false
-  }
-}
 
 const getPageSize = () => window.innerWidth < 768 ? 20 : 50
 
@@ -140,7 +121,6 @@ const saveChanges = async () => {
 }
 
 onMounted(() => {
-  checkAdminStatus()
   fetchCards(false)
 })
 </script>

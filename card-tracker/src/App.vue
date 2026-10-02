@@ -1,31 +1,10 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { isAdmin, setApiKey, clearApiKey } from './auth'
 
-const user = ref(null)
-const isAdmin = ref(false)
-
-const checkAuth = () => {
-  const token = localStorage.getItem('access');
-  const isStaff = localStorage.getItem('is_admin');
-  
-  if (token) {
-    try {
-      // Decode payload để lấy username hiển thị
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      user.value = payload;
-      isAdmin.value = isStaff === 'true';
-    } catch (e) {
-      console.error("Token không hợp lệ");
-    }
-  }
+const login = () => {
+  const key = window.prompt('Nhập API key:')
+  if (key && key.trim()) setApiKey(key)
 }
-
-const logout = () => {
-  localStorage.clear();
-  window.location.reload();
-}
-
-onMounted(checkAuth)
 </script>
 
 <template>
@@ -35,12 +14,12 @@ onMounted(checkAuth)
         TRACKER <span class="text-[10px] font-mono text-slate-500 ml-1"></span>
       </h1>
       
-      <div v-if="user" class="flex items-center gap-3">
-        <div class="text-right hidden xs:block">
-          <p class="text-xs font-bold">{{ user.username || 'User' }}</p>
-          <p class="text-[9px] text-emerald-500 font-mono" v-if="isAdmin">ADMIN ACCESS</p>
-        </div>
-        <button @click="logout" class="bg-slate-800 p-2 rounded-full hover:bg-red-500/20 transition-colors">
+      <button v-if="!isAdmin" @click="login" class="bg-slate-800 px-3 py-2 rounded-full text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors">
+        Key
+      </button>
+      <div v-else class="flex items-center gap-3">
+        <p class="text-[9px] text-emerald-500 font-mono">ADMIN ACCESS</p>
+        <button @click="clearApiKey" class="bg-slate-800 p-2 rounded-full hover:bg-red-500/20 transition-colors">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
           </svg>

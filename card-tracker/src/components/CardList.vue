@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import api from '../api'
 import { isAdmin } from '../auth'
 
@@ -16,14 +16,40 @@ const isAddModalOpen = ref(false)
 const submittingAdd = ref(false)
 const addError = ref('')
 
+const RARITIES = [
+  'Common', 'Rare', 'Super Rare', 'Ultra Rare', 'Secret Rare',
+  'Ultimate Rare', 'Ghost Rare', 'Starlight Rare', "Collector's Rare",
+  'Quarter Century Secret Rare', 'Platinum Secret Rare', 'Prismatic Secret Rare'
+]
+const LANGUAGES = ['EN', 'AE', 'JP', 'KR', 'SC', 'TC', 'FR', 'DE', 'IT', 'PT', 'SP']
+const CUSTOM = '__custom__'
+
 const createEmptyCard = () => ({
   name: '',
-  code: '',
+  set: '',
+  lang: 'AE',
+  customLang: '',
+  number: '',
   rarity: 'Common',
+  customRarity: '',
   quantity: 1,
   isLentOut: false,
   note: ''
 })
+
+// Card number: digits only, max 3 chars (padded to 3 on submit/preview)
+const onNumberInput = () => {
+  newCard.value.number = newCard.value.number.replace(/\D/g, '').slice(0, 3)
+}
+
+const buildCode = (c) => {
+  const set = c.set.trim().toUpperCase()
+  const lang = (c.lang === CUSTOM ? c.customLang : c.lang).trim().toUpperCase()
+  const num = c.number ? c.number.padStart(3, '0') : ''
+  return set && lang && num ? `${set}-${lang}${num}` : ''
+}
+
+const codePreview = computed(() => buildCode(newCard.value))
 
 const newCard = ref(createEmptyCard())
 
@@ -77,15 +103,23 @@ const openAddModal = () => {
 const submitAddCard = async () => {
   const payload = {
     name: newCard.value.name.trim(),
-    code: newCard.value.code.trim().toUpperCase(),
-    rarity: (newCard.value.rarity || 'Common').trim(),
+    code: codePreview.value,
+    rarity: (newCard.value.rarity === CUSTOM ? newCard.value.customRarity : newCard.value.rarity).trim(),
     quantity: Math.max(0, Number(newCard.value.quantity) || 0),
     isLentOut: !!newCard.value.isLentOut,
     Note: newCard.value.note?.trim() || null
   }
 
-  if (!payload.name || !payload.code) {
-    addError.value = 'Name và Code là bắt buộc.'
+  if (!payload.name) {
+    addError.value = 'Name là bắt buộc.'
+    return
+  }
+  if (!payload.code) {
+    addError.value = 'Cần nhập đủ Set, Language và số card (VD: AGOV, AE, 006).'
+    return
+  }
+  if (!payload.rarity) {
+    addError.value = 'Cần nhập độ hiếm tuỳ chỉnh.'
     return
   }
 
@@ -215,12 +249,27 @@ onMounted(() => {
 
           <div>
             <label class="text-[10px] text-slate-500 uppercase font-bold mb-2 block tracking-widest">Code</label>
-            <input v-model.trim="newCard.code" type="text" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-mono uppercase outline-none focus:border-emerald-500 transition-all" placeholder="VD: AGOV-EN001" />
+            <div class="grid grid-cols-3 gap-2">
+              <input v-model.trim="newCard.set" type="text" maxlength="6" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm font-mono uppercase outline-none focus:border-emerald-500 transition-all" placeholder="Set: AGOV" />
+              <select v-model="newCard.lang" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm font-mono outline-none focus:border-emerald-500 transition-all">
+                <option v-for="l in LANGUAGES" :key="l" :value="l">{{ l }}</option>
+                <option :value="CUSTOM">Khác...</option>
+              </select>
+              <input v-model="newCard.number" @input="onNumberInput" type="text" inputmode="numeric" maxlength="3" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm font-mono outline-none focus:border-emerald-500 transition-all" placeholder="006" />
+            </div>
+            <input v-if="newCard.lang === CUSTOM" v-model.trim="newCard.customLang" type="text" maxlength="3" class="mt-2 w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-mono uppercase outline-none focus:border-emerald-500 transition-all" placeholder="Mã ngôn ngữ, VD: SP" />
+            <p class="mt-2 text-[11px] font-mono text-slate-500">
+              Code: <span class="text-emerald-400 font-bold">{{ codePreview || 'SET-LANG000' }}</span>
+            </p>
           </div>
 
           <div>
             <label class="text-[10px] text-slate-500 uppercase font-bold mb-2 block tracking-widest">Rarity</label>
-            <input v-model.trim="newCard.rarity" type="text" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-500 transition-all" placeholder="VD: Common / Ultra Rare" />
+            <select v-model="newCard.rarity" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-500 transition-all">
+              <option v-for="r in RARITIES" :key="r" :value="r">{{ r }}</option>
+              <option :value="CUSTOM">Custom...</option>
+            </select>
+            <input v-if="newCard.rarity === CUSTOM" v-model.trim="newCard.customRarity" type="text" class="mt-2 w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-500 transition-all" placeholder="Nhập độ hiếm, VD: Duel Terminal Rare" />
           </div>
 
           <div>
